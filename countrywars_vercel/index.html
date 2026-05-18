@@ -317,13 +317,22 @@
 
   // ── Connect ─────────────────────────────────────────────────────────────────
   function connect() {
-    const url = document.getElementById('server-url').value.trim();
+    let url = document.getElementById('server-url').value.trim();
     if (!url) return toast('Please enter a server URL');
+    
+    // Automatically prepend https:// if missing
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
+    
     localStorage.setItem('cw_server_url', url);
     connectWs(url);
   }
 
   function connectWs(url) {
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://' + url;
+    }
     serverBaseUrl = url.replace(/\/$/, '');
     const wsUrl = serverBaseUrl.replace('https://', 'wss://').replace('http://', 'ws://') + '/ws';
 
