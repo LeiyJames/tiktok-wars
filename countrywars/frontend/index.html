@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Country Wars - Racing Overlay</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold:    #FFD700;
+    --silver:  #C0C0C0;
+    --bronze:  #CD7F32;
+    --neon:    #00FFAA;
+    --fire:    #FF4500;
+  }
+
+  body {
+    background: transparent;
+    font-family: 'Rajdhani', sans-serif;
+    color: #fff;
+    height: 100vh;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── Main panel ── */
+  #panel {
+    width: 420px;
+    height: 700px;
+    background: #05050a;
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 40px rgba(255,165,0,0.15), inset 0 0 15px rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Video Background & Overlay */
+  #bg-video {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    /* Animated Gradient Fallback if no video is found */
+    background: linear-gradient(-45deg, #0b071c, #1a103c, #0d1b2a, #0b071c);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+  }
+  @keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  #bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(1px);
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    z-index: 10;
+  }
+  #title {
+    font-size: 18px;
+  }
+  
+  #live-badge {
+    background: #FF0040;
+    border-radius: 4px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 6px;
+    animation: livePulse 1.2s ease-in-out infinite;
+  }
+  @keyframes livePulse {
+    0%,100% { opacity:1; box-shadow:0 0 8px #FF0040; }
+    50%      { opacity:0.6; box-shadow:none; }
+  }
+
+  /* ── Battle Banner ── */
+  #battle-banner {
+    display: none;
+    background: linear-gradient(90deg, rgba(255,50,0,0.3), rgba(255,215,0,0.2), rgba(0,100,255,0.3));
+    border-bottom: 1px solid rgba(255,100,0,0.5);
+    padding: 6px;
+    text-align: center;
+    animation: battlePulse 1.5s ease-in-out infinite;
+    z-index: 10;
+  }
+  @keyframes battlePulse {
+    0%,100% { box-shadow: 0 4px 12px rgba(255,100,0,0.3); }
+    50%      { box-shadow: 0 4px 24px rgba(255,200,0,0.6); }
+  }
+  #battle-banner.active { display: block; }
+  #battle-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 1px;
+  }
+
+  /* ── Announcement Ticker ── */
+  #ticker-bar {
+    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    border-top: 1px solid rgba(255, 215, 0, 0.3);
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 5px 0;
+    z-index: 10;
+  }
+  #ticker-content {
+    display: inline-block;
+    animation: tickerScroll 28s linear infinite;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    color: #ffd700;
+    letter-spacing: 0.5px;
+    padding-left: 100%;
+  }
+  @keyframes tickerScroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+  }
+  #ticker-content .sep {
+    color: rgba(255,255,255,0.3);
+    margin: 0 18px;
+  }
+  #ticker-content .hi {
+    color: #fff;
+  }
+
+  /* ── Track System ── */
+  #track-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    padding: 4px 0;
+    background: transparent;
+    z-index: 2;
+  }
+
+  /* ── Individual Lanes ── */
+  .lane {
+    display: flex;
+    flex: 1;
+    min-height: 55px;
+    position: relative;
+    /* Thin, sleek glass divider */
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    transition: transform 0.4s ease;
+  }
+  
+  .lane.rank-1 { background: linear-gradient(90deg, rgba(255,215,0,0.3), transparent 200px); }
+  .lane.rank-2 { background: linear-gradient(90deg, rgba(192,192,192,0.2), transparent 200px); }
+  .lane.rank-3 { background: linear-gradient(90deg, rgba(205,127,50,0.2), transparent 200px); }
+  .lane.battle { background: linear-gradient(90deg, rgba(255,69,0,0.4), transparent 200px); }
+
+  /* ── Left Side: Country Info ── */
+  .lane-info {
+    width: 130px; /* Super compact since we only show rank, flag, score, and stats */
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    /* Frosted glass effect for the stats panel */
+    background: linear-gradient(90deg, rgba(0,0,0,0.7) 60%, transparent);
+    backdrop-filter: blur(2px);
+    z-index: 5;
+    gap: 6px;
+  }
+  .rank-num {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    min-width: 20px;
+    text-align: center;
+  }
+  .rank-1 .rank-num { color: var(--gold); }
+  .rank-2 .rank-num { color: var(--silver); }
+  .rank-3 .rank-num { color: var(--bronze); }
+
+  .flag-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .real-flag {
+    width: 22px;
+    height: auto;
+    border-radius: 2px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+
+  .country-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex-grow: 1;
+  }
+  .country-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.1;
+    text-shadow: 1px 1px 2px #000;
+  }
+  .country-stats {
+    display: flex;
+    gap: 6px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.8);
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  /* ── Right Side: Track Area & Runner ── */
+  .track-area {
+    flex-grow: 1;
+    position: relative;
+  }
+  
+  .runner {
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: left 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 6;
+  }
+  
+
+
+  .runner-video {
+    height: 42px;
+    width: auto;
+    object-fit: contain;
+    background: transparent;
+  }
+
+  .runner-model {
+    font-size: 24px;
+    line-height: 1;
+    display: flex;
+    align-items: flex-end;
+    filter: drop-shadow(2px 3px 3px rgba(0,0,0,0.6));
+    position: relative;
+    transition: all 0.2s ease;
+  }
+
+  .runner-model.boost-active {
+    filter: drop-shadow(0 0 10px var(--neon)) drop-shadow(2px 0 5px rgba(0, 255, 170, 0.6));
+    transform: scale(1.15) skewX(-8deg); /* Lean forward and grow */
+  }
+
+  .runner-model .flag-carry {
+    position: absolute;
+    left: 50%;
+    top: -12px;
+    transform: translateX(-50%);
+  }
+  .flag-carry .real-flag {
+    width: 14px; /* A bit small for the runner's head */
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  /* Dust effect behind runner */
+  .dust {
+    position: absolute;
+    bottom: -4px;
+    left: -15px;
+    width: 12px;
+    height: 4px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%;
+    animation: dustPuff 0.4s infinite;
+  }
+  @keyframes dustPuff {
+    0% { transform: scale(1) translateX(0); opacity: 1; }
+    100% { transform: scale(2) translateX(-10px); opacity: 0; }
+  }
+
+  /* When boosted, the dust becomes intense speed streaks */
+  .runner-model.boost-active .dust {
+    background: var(--neon);
+    width: 20px;
+    height: 4px;
+    box-shadow: 0 0 8px var(--neon);
+    animation: speedStreak 0.15s infinite;
+  }
+  @keyframes speedStreak {
+    0% { transform: scale(1) translateX(0); opacity: 1; }
+    100% { transform: scaleX(3) translateX(-15px); opacity: 0; }
+  }
+
+  /* ── Particles & Popups ── */
+  #levelup-popup {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+    background: linear-gradient(135deg, rgba(0,0,0,0.95), rgba(20,10,60,0.97));
+    border: 2px solid var(--gold); border-radius: 20px; padding: 20px 32px;
+    text-align: center; z-index: 999; pointer-events: none;
+    box-shadow: 0 0 60px rgba(255,215,0,0.5);
+  }
+  #levelup-popup.show { animation: popupIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards, popupOut 0.4s ease 2.5s forwards; }
+  @keyframes popupIn { to { transform: translate(-50%,-50%) scale(1); } }
+  @keyframes popupOut { to { transform: translate(-50%,-50%) scale(0); opacity:0; } }
+
+  .gift-particle { position: fixed; font-size: 28px; pointer-events: none; animation: giftFall linear forwards; z-index: 100; }
+  @keyframes giftFall { 0% { opacity:1; transform: translateY(0) rotate(0deg); } 100% { opacity:0; transform: translateY(200px) rotate(360deg); } }
+
+  /* ── Finish Line (Visual only, on the far right) ── */
+  #finish-line {
+    display: none; /* Removed per user request */
+  }
+
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <!-- Video Background -->
+  <video id="bg-video" autoplay loop muted playsinline>
+    <source src="/static/bg.webm" type="video/webm">
+    <source src="/static/bg.mp4" type="video/mp4">
+  </video>
+  <div id="bg-overlay"></div>
+
+  <div id="header">
+    <div id="title">⚔️</div>
+    <div id="live-badge">● LIVE</div>
+  </div>
+
+  <div id="battle-banner">
+    <div id="battle-text">⚔️ BATTLE: <span id="battle-a"></span> VS <span id="battle-b"></span></div>
+  </div>
+
+  <div id="track-container">
+    <div id="finish-line"></div>
+    <div id="lanes"></div>
+  </div>
+
+  <!-- Scrolling Announcement Ticker -->
+  <div id="ticker-bar">
+    <span id="ticker-content">
+      ⚔️ <span class="hi">COUNTRY WARS!</span> <span class="sep">◆</span>
+      Comment your <span class="hi">country name</span>, <span class="hi">country code</span>, or <span class="hi">flag emoji</span> to join! (e.g. "Philippines", "PH", or 🇵🇭) <span class="sep">◆</span>
+      👍 Likes • 💬 Comments • 🎁 Gifts • 🔁 Shares • ➕ Follows all give <span class="hi">POINTS!</span> <span class="sep">◆</span>
+      🏆 The winning country <span class="hi">WINS THE WAR!</span> <span class="sep">◆</span>
+    </span>
+  </div>
+</div>
+
+<div id="levelup-popup">
+  <div id="levelup-flag" style="font-size: 40px;">🏳️</div>
+  <div style="font-family: 'Orbitron', sans-serif; font-size: 20px; color: var(--gold); margin-top:8px;">LEVEL UP!</div>
+  <div id="levelup-sub" style="font-size: 14px; color: rgba(255,255,255,0.8);"></div>
+</div>
+
+<script>
+// ── Country Flag Dictionary ──
+const COUNTRY_CODES = {
+  "Philippines": "ph", "Japan": "jp", "USA": "us", "United States": "us",
+  "South Korea": "kr", "Korea": "kr", "Indonesia": "id", "Thailand": "th",
+  "Malaysia": "my", "Vietnam": "vn", "Brazil": "br", "Mexico": "mx",
+  "India": "in", "China": "cn", "United Kingdom": "gb", "UK": "gb",
+  "Australia": "au", "Canada": "ca", "France": "fr", "Germany": "de",
+  "Spain": "es", "Italy": "it", "Nigeria": "ng", "Saudi Arabia": "sa",
+  "UAE": "ae", "Pakistan": "pk", "Bangladesh": "bd", "Egypt": "eg",
+  "Turkey": "tr", "Argentina": "ar", "Colombia": "co", "Singapore": "sg",
+};
+
+function getFlagImg(countryName) {
+  const code = COUNTRY_CODES[countryName];
+  if (code) {
+    return `<img src="https://flagcdn.com/w20/${code}.png" class="real-flag" alt="${countryName}">`;
+  }
+  return '🏳️'; // Fallback
+}
+
+// ── WebSocket connection ──
+const WS_URL = `ws://${location.host}/ws`;
+let ws, reconnectTimer;
+let leaderboardData = [];
+const activeSpeedBoosts = {};
+
+function connect() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => { console.log('✅ Connected'); clearTimeout(reconnectTimer); };
+  ws.onclose = () => { reconnectTimer = setTimeout(connect, 3000); };
+  ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
+  ws.onerror = () => ws.close();
+}
+connect();
+
+function handleMessage(data) {
+  switch (data.type) {
+    case 'full_update':
+      renderRaceTrack(data.leaderboard);
+      break;
+    case 'points_update':
+      if (data.leaderboard) renderRaceTrack(data.leaderboard);
+      if (data.leveled_up) showLevelUp(data);
+      if (data.event_type === 'gift') spawnGiftRain(data.gift_name, data.points_added >= 100 ? 10 : 3);
+      if (data.battle) updateBattle(data.battle);
+      if (data.points_added > 0 && data.country) triggerSpeedBoost(data.country);
+      break;
+    case 'battle_start':
+      updateBattle({ country_a: data.country_a, country_b: data.country_b, active: 1 });
+      break;
+    case 'battle_end':
+      document.getElementById('battle-banner').classList.remove('active');
+      if (data.leaderboard) renderRaceTrack(data.leaderboard);
+      break;
+  }
+}
+
+const lanesContainer = document.getElementById('lanes');
+
+function renderRaceTrack(rows) {
+  leaderboardData = rows;
+  lanesContainer.innerHTML = '';
+  
+  // Find the top points to calculate relative runner positions.
+  const maxPoints = rows.length > 0 ? rows[0].points : 1;
+  const highestPoints = Math.max(maxPoints, 1);
+
+  rows.forEach((r, i) => {
+    const lane = document.createElement('div');
+    lane.className = `lane rank-${r.rank}`;
+    lane.id = `lane-${sanitize(r.country)}`;
+
+    const rankIcon = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : `#${r.rank}`;
+    const flagImg = getFlagImg(r.country);
+    
+    // Stats handling (fallback to 0 if not present)
+    const stats = r.stats || { likes: 0, comments: 0, gifts: 0, follows: 0, shares: 0 };
+    
+    // Calculate runner position (0% to 70%)
+    const leftPct = (r.points / highestPoints) * 70;
+
+    // Check if runner has an active speed boost
+    const isBoosted = activeSpeedBoosts[r.country] && activeSpeedBoosts[r.country] > Date.now();
+
+    lane.innerHTML = `
+      <div class="lane-info">
+        <div class="rank-num">${rankIcon}</div>
+        <div class="flag-box">${flagImg}</div>
+        <div class="country-details">
+          <div style="font-family: 'Orbitron', sans-serif; font-size: 12px; color: #ffd700; font-weight: bold; margin-bottom: 2px;">
+            ${formatPts(r.points)}
+          </div>
+          <div class="country-stats">
+            <span class="stat-item">👍 ${formatCount(stats.likes)}</span>
+            <span class="stat-item">💬 ${formatCount(stats.comments)}</span>
+            <span class="stat-item">🎁 ${formatCount(stats.gifts)}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="track-area">
+        <div class="runner" style="left: ${leftPct}%;">
+          <div class="runner-model ${isBoosted ? 'boost-active' : ''}">
+            <video src="/static/runner.webm" autoplay loop muted playsinline class="runner-video" data-boosted="${isBoosted}"></video>
+            <span class="flag-carry">${flagImg}</span>
+            <div class="dust"></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    lanesContainer.appendChild(lane);
+  });
+
+  // Ensure playback rates are applied after DOM insertion
+  document.querySelectorAll('.runner-video').forEach(vid => {
+    vid.playbackRate = vid.dataset.boosted === 'true' ? 2.5 : 1.0;
+  });
+}
+
+function triggerSpeedBoost(country) {
+  const safeCountry = sanitize(country);
+  activeSpeedBoosts[country] = Date.now() + 2000;
+  
+  const lane = document.getElementById(`lane-${safeCountry}`);
+  if (lane) {
+    const model = lane.querySelector('.runner-model');
+    const vid = lane.querySelector('.runner-video');
+    if (model) model.classList.add('boost-active');
+    if (vid) vid.playbackRate = 2.5;
+  }
+  
+  setTimeout(() => {
+    if (Date.now() >= activeSpeedBoosts[country]) {
+      const currentLane = document.getElementById(`lane-${safeCountry}`);
+      if (currentLane) {
+        const m = currentLane.querySelector('.runner-model');
+        const v = currentLane.querySelector('.runner-video');
+        if (m) m.classList.remove('boost-active');
+        if (v) v.playbackRate = 1.0;
+      }
+    }
+  }, 2000);
+}
+
+function updateBattle(battle) {
+  const banner = document.getElementById('battle-banner');
+  if (!battle || !battle.active) {
+    banner.classList.remove('active');
+    return;
+  }
+  document.getElementById('battle-a').textContent = battle.country_a;
+  document.getElementById('battle-b').textContent = battle.country_b;
+  banner.classList.add('active');
+
+  // Highlight battle lanes
+  document.querySelectorAll('.lane').forEach(r => r.classList.remove('battle'));
+  [battle.country_a, battle.country_b].forEach(c => {
+    const el = document.getElementById(`lane-${sanitize(c)}`);
+    if (el) el.classList.add('battle');
+  });
+}
+
+function showLevelUp(data) {
+  const row = leaderboardData.find(r => r.country === data.country);
+  document.getElementById('levelup-flag').textContent = row?.flag || '🏳️';
+  document.getElementById('levelup-sub').textContent = `${data.country} reached ${data.level_label}`;
+  
+  const popup = document.getElementById('levelup-popup');
+  popup.classList.remove('show');
+  void popup.offsetWidth;
+  popup.classList.add('show');
+}
+
+const GIFT_EMOJIS = { rose:'🌹', lion:'🦁', galaxy:'🌌', fireworks:'🎆', 'ice cream cone':'🍦', 'drama queen':'👑', concert:'🎵', universe:'🪐' };
+function spawnGiftRain(giftName, count) {
+  const emoji = GIFT_EMOJIS[giftName] || '🎁';
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'gift-particle';
+      el.textContent = emoji;
+      el.style.left = Math.random() * 90 + 'vw';
+      el.style.top = '0';
+      el.style.animationDuration = (1.2 + Math.random() * 1.5) + 's';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }, i * 80);
+  }
+}
+
+function formatPts(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if (n >= 1000) return (n/1000).toFixed(1)+'K';
+  return n.toString();
+}
+function formatCount(n) {
+  if (n > 999) return (n/1000).toFixed(1)+'k';
+  return n.toString();
+}
+function sanitize(s) { return s.replace(/[^a-zA-Z0-9]/g,'_'); }
+</script>
+</body>
+</html>

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔️ Country Wars — Control Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #FFD700;
+    --neon: #00FFAA;
+    --red: #FF0040;
+    --bg: #080612;
+    --surface: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.1);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(ellipse at top, #1a0b3d 0%, #080612 60%);
+    min-height: 100vh;
+    color: #fff;
+  }
+
+  /* ── Header ── */
+  header {
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: 'Orbitron', sans-serif; font-size: 18px; font-weight: 900; color: var(--gold); letter-spacing: 2px; }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.08); border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; border: 1px solid var(--border);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #555; transition: background .3s; }
+  .dot.connected { background: #00FF88; box-shadow: 0 0 8px #00FF88; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(8px);
+  }
+  .card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* ── Server setup ── */
+  .server-row { display: flex; gap: 10px; }
+  .server-row input {
+    flex: 1;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #fff;
+    font-size: 13px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .server-row input:focus { border-color: var(--gold); }
+  .server-row input::placeholder { color: rgba(255,255,255,0.2); }
+
+  /* ── Buttons ── */
+  .btn {
+    border: none; border-radius: 8px; padding: 10px 18px;
+    font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
+    cursor: pointer; transition: all .2s; letter-spacing: 1px;
+  }
+  .btn-gold { background: var(--gold); color: #000; }
+  .btn-gold:hover { background: #ffe84d; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,215,0,.4); }
+  .btn-red { background: var(--red); color: #fff; }
+  .btn-red:hover { background: #ff3360; transform: translateY(-1px); }
+  .btn-glass {
+    background: rgba(255,255,255,0.08); color: #fff;
+    border: 1px solid var(--border);
+  }
+  .btn-glass:hover { background: rgba(255,255,255,0.15); }
+  .btn-neon { background: rgba(0,255,170,0.15); color: var(--neon); border: 1px solid rgba(0,255,170,0.3); }
+  .btn-neon:hover { background: rgba(0,255,170,0.25); box-shadow: 0 0 16px rgba(0,255,170,0.3); }
+  .btn-sm { padding: 6px 12px; font-size: 10px; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  /* ── Event buttons ── */
+  .event-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .event-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 8px; text-align: center;
+    cursor: pointer; transition: all .2s;
+  }
+  .event-btn:hover { background: rgba(255,255,255,0.12); transform: scale(1.04); }
+  .event-btn.active { border-color: var(--gold); background: rgba(255,215,0,0.1); }
+  .event-btn .icon { font-size: 24px; }
+  .event-btn .label { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+  .event-btn .pts { font-size: 11px; color: var(--gold); font-weight: 600; }
+
+  /* ── Country selector ── */
+  .country-input {
+    width: 100%; background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: #fff; font-size: 13px; outline: none;
+    transition: border-color .2s; margin-bottom: 12px;
+  }
+  .country-input:focus { border-color: var(--gold); }
+
+  /* ── Leaderboard ── */
+  #leaderboard-list { display: flex; flex-direction: column; gap: 6px; }
+  .lb-row {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,0.04); border-radius: 10px; padding: 8px 12px;
+    transition: background .2s;
+  }
+  .lb-row:hover { background: rgba(255,255,255,0.08); }
+  .lb-rank { font-family: 'Orbitron', sans-serif; font-size: 13px; min-width: 24px; color: rgba(255,255,255,0.4); }
+  .lb-rank.gold { color: var(--gold); }
+  .lb-flag { width: 28px; height: 20px; object-fit: cover; border-radius: 3px; }
+  .lb-flag-emoji { font-size: 18px; }
+  .lb-country { flex: 1; font-size: 13px; font-weight: 500; }
+  .lb-pts { font-family: 'Orbitron', sans-serif; font-size: 12px; color: var(--gold); }
+  .lb-stats { font-size: 10px; color: rgba(255,255,255,0.4); }
+  .lb-bar-wrap { height: 3px; background: rgba(255,255,255,0.07); border-radius: 2px; margin-top: 4px; }
+  .lb-bar { height: 3px; background: var(--gold); border-radius: 2px; transition: width .8s ease; }
+
+  /* ── Stats grid ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stat-box { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-box .val { font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 700; color: var(--gold); }
+  .stat-box .key { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 4px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.9); color: #fff; padding: 10px 20px;
+    border-radius: 8px; font-size: 13px; border: 1px solid var(--border);
+    opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 999;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚔️ COUNTRY WARS</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="status-pill">
+      <div class="dot" id="conn-dot"></div>
+      <span id="conn-label">Disconnected</span>
+    </div>
+    <button class="btn btn-red btn-sm" onclick="resetGame()">🔄 RESET</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Server Setup -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">⚡ Server Connection</div>
+    <div class="server-row">
+      <input type="url" id="server-url" placeholder="https://your-app.railway.app" />
+      <button class="btn btn-gold" onclick="connect()">CONNECT</button>
+    </div>
+    <p style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:8px">
+      Deploy your Python backend to Railway, then paste the URL above.
+    </p>
+  </div>
+
+  <div class="grid">
+
+    <!-- Left Column -->
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Fire Event -->
+      <div class="card">
+        <div class="card-title">🎯 Fire Event</div>
+        <input class="country-input" id="target-country" placeholder="Country (e.g. Philippines, JP, 🇵🇭)" />
+        <div class="event-grid" id="event-grid">
+          <div class="event-btn active" onclick="selectEvent(this,'like')">
+            <div class="icon">👍</div>
+            <div class="label">Like</div>
+            <div class="pts">+1 pt</div>
+          </div>
+          <div class="event-btn" onclick="selectEvent(this,'comment')">
+            <div class="icon">💬</div>
+            <div class="label">Comment</div>
+            <div class="pts">+2 pts</div>
+          </div>
+          <div class="event-btn" onclick="selectEvent(this,'share')">
+            <div class="icon">🔁</div>
+            <div class="label">Share</div>
+            <div class="pts">+30 pts</div>
+          </div>
+          <div class="event-btn" onclick="selectEvent(this,'follow')">
+            <div class="icon">➕</div>
+            <div class="label">Follow</div>
+            <div class="pts">+20 pts</div>
+          </div>
+          <div class="event-btn" onclick="selectEvent(this,'gift','rose')">
+            <div class="icon">🌹</div>
+            <div class="label">Rose</div>
+            <div class="pts">+10 pts</div>
+          </div>
+          <div class="event-btn" onclick="selectEvent(this,'gift','fireworks')">
+            <div class="icon">🎆</div>
+            <div class="label">Fireworks</div>
+            <div class="pts">+100 pts</div>
+          </div>
+          <div class="event-btn" onclick="selectEvent(this,'gift','lion')">
+            <div class="icon">🦁</div>
+            <div class="label">Lion</div>
+            <div class="pts">+1K pts</div>
+          </div>
+          <div class="event-btn" onclick="selectEvent(this,'gift','galaxy')">
+            <div class="icon">🌌</div>
+            <div class="label">Galaxy</div>
+            <div class="pts">+5K pts</div>
+          </div>
+          <div class="event-btn" onclick="selectEvent(this,'gift','tiktok universe')">
+            <div class="icon">🪐</div>
+            <div class="label">Universe</div>
+            <div class="pts">+10K pts</div>
+          </div>
+        </div>
+        <button class="btn btn-neon" style="width:100%;margin-top:12px" onclick="fireEvent()">
+          🚀 FIRE EVENT
+        </button>
+      </div>
+
+      <!-- Battle Control -->
+      <div class="card">
+        <div class="card-title">⚔️ Battle Control</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input class="country-input" id="battle-a" placeholder="Country A" style="margin:0;flex:1"/>
+          <input class="country-input" id="battle-b" placeholder="Country B" style="margin:0;flex:1"/>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-gold" style="flex:1" onclick="startBattle()">⚔️ START BATTLE</button>
+          <button class="btn btn-glass" style="flex:1" onclick="endBattle()">🏁 END BATTLE</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column -->
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Stats -->
+      <div class="card">
+        <div class="card-title">📊 Live Stats</div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="val" id="stat-countries">0</div>
+            <div class="key">Countries</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" id="stat-viewers">0</div>
+            <div class="key">Viewers</div>
+          </div>
+          <div class="stat-box">
+            <div class="val" id="stat-gifts">0</div>
+            <div class="key">Gifts</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="card" style="flex:1">
+        <div class="card-title">🏆 Leaderboard</div>
+        <div id="leaderboard-list">
+          <p style="color:rgba(255,255,255,0.2);font-size:12px;text-align:center;padding:20px">
+            Connect to your server to see the live leaderboard
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  let ws = null;
+  let serverBaseUrl = '';
+  let selectedEvent = { type: 'like', gift_name: null };
+  let leaderboard = [];
+
+  // ── Load saved URL ──────────────────────────────────────────────────────────
+  window.addEventListener('load', () => {
+    const saved = localStorage.getItem('cw_server_url') || '';
+    if (saved) {
+      document.getElementById('server-url').value = saved;
+      connectWs(saved);
+    }
+  });
+
+  // ── Connect ─────────────────────────────────────────────────────────────────
+  function connect() {
+    const url = document.getElementById('server-url').value.trim();
+    if (!url) return toast('Please enter a server URL');
+    localStorage.setItem('cw_server_url', url);
+    connectWs(url);
+  }
+
+  function connectWs(url) {
+    serverBaseUrl = url.replace(/\/$/, '');
+    const wsUrl = serverBaseUrl.replace('https://', 'wss://').replace('http://', 'ws://') + '/ws';
+
+    if (ws) ws.close();
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      setConnected(true);
+      toast('✅ Connected to server!');
+      fetchStats();
+    };
+    ws.onclose = () => {
+      setConnected(false);
+      setTimeout(() => connectWs(serverBaseUrl), 5000);
+    };
+    ws.onerror = () => setConnected(false);
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      handleMsg(data);
+    };
+  }
+
+  function setConnected(v) {
+    document.getElementById('conn-dot').className = 'dot' + (v ? ' connected' : '');
+    document.getElementById('conn-label').textContent = v ? 'Connected' : 'Disconnected';
+  }
+
+  function handleMsg(data) {
+    if (data.leaderboard) renderLeaderboard(data.leaderboard);
+    if (data.type === 'full_update' || data.type === 'points_update') fetchStats();
+  }
+
+  // ── Event selection ─────────────────────────────────────────────────────────
+  function selectEvent(el, type, giftName) {
+    document.querySelectorAll('.event-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    selectedEvent = { type, gift_name: giftName || null };
+  }
+
+  // ── Fire event ──────────────────────────────────────────────────────────────
+  async function fireEvent() {
+    const country = document.getElementById('target-country').value.trim();
+    if (!country) return toast('⚠️ Please enter a country first!');
+    if (!serverBaseUrl) return toast('⚠️ Not connected to server');
+
+    const payload = {
+      type: selectedEvent.type,
+      user: `panel_${country.replace(/\s/g,'_').toLowerCase()}`,
+      country: country,
+    };
+    if (selectedEvent.gift_name) {
+      payload.gift_name = selectedEvent.gift_name;
+      payload.amount = 1;
+    }
+
+    try {
+      const res = await fetch(`${serverBaseUrl}/mock/event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        toast(`✅ ${selectedEvent.type} sent to ${country}!`);
+      } else {
+        toast('❌ Error: ' + (data.message || 'Unknown'));
+      }
+    } catch (e) {
+      toast('❌ Failed to reach server');
+    }
+  }
+
+  // ── Battle ──────────────────────────────────────────────────────────────────
+  async function startBattle() {
+    const a = document.getElementById('battle-a').value.trim();
+    const b = document.getElementById('battle-b').value.trim();
+    if (!a || !b) return toast('Enter both countries for the battle');
+    await post('/battle/start', { country_a: a, country_b: b });
+    toast(`⚔️ Battle started: ${a} VS ${b}!`);
+  }
+
+  async function endBattle() {
+    await post('/battle/end', {});
+    toast('🏁 Battle ended!');
+  }
+
+  async function resetGame() {
+    if (!confirm('Reset all scores? This cannot be undone.')) return;
+    await post('/mock/reset', {});
+    toast('🔄 Game reset!');
+  }
+
+  // ── Stats ───────────────────────────────────────────────────────────────────
+  async function fetchStats() {
+    try {
+      const res = await fetch(`${serverBaseUrl}/stats`);
+      const d = await res.json();
+      document.getElementById('stat-countries').textContent = d.total_countries || 0;
+      document.getElementById('stat-viewers').textContent = d.total_viewers || 0;
+      document.getElementById('stat-gifts').textContent = d.total_gifts || 0;
+    } catch (_) {}
+  }
+
+  // ── Leaderboard ─────────────────────────────────────────────────────────────
+  function renderLeaderboard(lb) {
+    leaderboard = lb;
+    const list = document.getElementById('leaderboard-list');
+    if (!lb.length) {
+      list.innerHTML = '<p style="color:rgba(255,255,255,.2);font-size:12px;text-align:center;padding:20px">No countries yet — fire some events!</p>';
+      return;
+    }
+    const maxPts = lb[0]?.points || 1;
+    const ranks = ['🥇','🥈','🥉'];
+    list.innerHTML = lb.map((r,i) => {
+      const iso = flagEmojiToIso(r.flag);
+      const flagImg = iso
+        ? `<img class="lb-flag" src="https://flagcdn.com/w40/${iso}.png" onerror="this.outerHTML='<span class=lb-flag-emoji>${r.flag}</span>'">`
+        : `<span class="lb-flag-emoji">${r.flag}</span>`;
+      const bar = Math.round((r.points / maxPts) * 100);
+      const pts = fmtPts(r.points);
+      const rankIcon = ranks[i] || `<span style="font-size:11px">#${r.rank}</span>`;
+      const s = r.stats || {};
+      return `
+        <div class="lb-row">
+          <div class="lb-rank ${i===0?'gold':''}">${rankIcon}</div>
+          ${flagImg}
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="lb-country">${r.country}</span>
+              <span class="lb-pts">${pts}</span>
+            </div>
+            <div class="lb-bar-wrap"><div class="lb-bar" style="width:${bar}%"></div></div>
+            <div class="lb-stats">👍${fmt(s.likes)} 💬${fmt(s.comments)} 🎁${fmt(s.gifts)} 🔁${fmt(s.shares)}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Populate battle dropdowns
+    const countries = lb.map(r => r.country);
+    ['battle-a','battle-b'].forEach(id => {
+      const inp = document.getElementById(id);
+      if (inp && !inp.list) {
+        const dl = document.createElement('datalist');
+        dl.id = id + '-list';
+        inp.setAttribute('list', dl.id);
+        inp.parentElement.appendChild(dl);
+      }
+      const dl = document.getElementById(id + '-list');
+      if (dl) dl.innerHTML = countries.map(c => `<option value="${c}">`).join('');
+    });
+
+    document.getElementById('stat-countries').textContent = lb.length;
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  async function post(path, body) {
+    if (!serverBaseUrl) return toast('Not connected');
+    return fetch(`${serverBaseUrl}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+
+  function fmt(n) { n = n||0; if (n>=1000) return (n/1000).toFixed(1)+'K'; return n; }
+  function fmtPts(n) { if (n>=1000000) return (n/1000000).toFixed(1)+'M'; if (n>=1000) return (n/1000).toFixed(1)+'K'; return n; }
+
+  function flagEmojiToIso(emoji) {
+    if (!emoji || emoji.length < 2) return null;
+    const chars = [...emoji];
+    if (chars.length !== 2) return null;
+    const a = chars[0].codePointAt(0) - 0x1F1A5;
+    const b = chars[1].codePointAt(0) - 0x1F1A5;
+    return String.fromCharCode(a, b).toLowerCase();
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  // Keyboard shortcut: Enter to fire event
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.activeElement.id === 'target-country') {
+      fireEvent();
+    }
+  });
+</script>
+</body>
+</html>

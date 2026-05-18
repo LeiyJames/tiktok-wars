@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Country Wars — Mock & Control Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@500;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+<style>
+  /* ── CSS Reset & Design Tokens ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  :root {
+    --gold:      #FFD700;
+    --silver:    #C0C0C0;
+    --bronze:    #CD7F32;
+    --neon-green:#00FFAA;
+    --neon-blue: #00BFFF;
+    --neon-pink: #FF007F;
+    --battle-orange:#FF6B00;
+    --dark-bg:   #090816;
+    --card-bg:   rgba(18, 16, 42, 0.75);
+    --border:    rgba(255, 255, 255, 0.08);
+    --hover-bg:  rgba(255, 255, 255, 0.04);
+  }
+
+  body {
+    background: radial-gradient(circle at 50% 50%, #15122e 0%, var(--dark-bg) 100%);
+    font-family: 'Rajdhani', sans-serif;
+    color: #f1f1ff;
+    min-height: 100vh;
+    padding: 24px;
+    line-height: 1.5;
+  }
+
+  /* ── Container ── */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 350px 1fr 380px;
+    gap: 24px;
+  }
+
+  @media (max-width: 1100px) {
+    .container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ── Header ── */
+  header {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 16px 24px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-logo h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--gold), #ffffff, var(--neon-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 255, 170, 0.1);
+    border: 1px solid var(--neon-green);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--neon-green);
+  }
+
+  .status-pill.offline {
+    background: rgba(255, 0, 127, 0.1);
+    border-color: var(--neon-pink);
+    color: var(--neon-pink);
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    background: currentColor;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(0.9); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0.5; }
+  }
+
+  /* ── Panel / Cards ── */
+  .panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #fff;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* ── Grid/Form Elements ── */
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  input, select {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 8px rgba(0, 191, 255, 0.25);
+  }
+
+  /* ── Interactive Country Grids ── */
+  .country-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .country-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+
+  .country-card:hover {
+    background: rgba(0, 191, 255, 0.08);
+    border-color: rgba(0, 191, 255, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .country-card.selected {
+    background: rgba(0, 255, 170, 0.12);
+    border-color: var(--neon-green);
+    box-shadow: 0 0 10px rgba(0, 255, 170, 0.25);
+  }
+
+  .country-card .flag {
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+
+  .country-card .code {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* ── Event buttons ── */
+  .event-btn-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .action-btn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    color: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+  }
+
+  .action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  .action-btn.selected {
+    background: rgba(0, 191, 255, 0.15);
+    border-color: var(--neon-blue);
+    box-shadow: 0 0 8px rgba(0, 191, 255, 0.3);
+  }
+
+  .action-btn .icon {
+    font-size: 18px;
+  }
+
+  .gift-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .gift-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .gift-card:hover {
+    background: var(--hover-bg);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .gift-card.selected {
+    background: rgba(255, 215, 0, 0.12);
+    border-color: var(--gold);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+  }
+
+  .gift-card .emoji {
+    font-size: 20px;
+    margin-bottom: 2px;
+  }
+
+  .gift-card .points {
+    color: var(--gold);
+    font-size: 11px;
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  /* ── Buttons ── */
+  button {
+    font-family: inherit;
+  }
+
+  .btn {
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s;
+  }
+
+  .btn-primary {
+    background: linear-gradient(90deg, var(--neon-blue), #0088FF);
+    border: none;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(0, 136, 255, 0.3);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 136, 255, 0.5);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+    color: #fff;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-danger {
+    background: rgba(255, 0, 127, 0.15);
+    border: 1px solid var(--neon-pink);
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(255, 0, 127, 0.15);
+  }
+
+  .btn-danger:hover {
+    background: rgba(255, 0, 127, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(255, 0, 127, 0.3);
+  }
+
+  .btn-battle {
+    background: linear-gradient(90deg, var(--battle-orange), #FF3300);
+    border: none;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(255, 107, 0, 0.3);
+  }
+
+  .btn-battle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 0, 0.5);
+  }
+
+  /* ── Real-time Leaderboard ── */
+  .mini-leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mini-row {
+    display: grid;
+    grid-template-columns: 24px 28px 1fr auto;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+    transition: transform 0.2s;
+  }
+
+  .mini-row.rank-1 {
+    border-color: rgba(255, 215, 0, 0.25);
+    background: rgba(255, 215, 0, 0.05);
+  }
+
+  .mini-row.battle {
+    border-color: var(--battle-orange);
+    box-shadow: 0 0 8px rgba(255, 107, 0, 0.2);
+  }
+
+  .mini-rank {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: center;
+  }
+
+  .rank-1 .mini-rank { color: var(--gold); }
+  .rank-2 .mini-rank { color: var(--silver); }
+  .rank-3 .mini-rank { color: var(--bronze); }
+
+  .mini-flag {
+    font-size: 20px;
+    text-align: center;
+  }
+
+  .mini-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mini-pts {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    color: var(--neon-blue);
+  }
+
+  /* ── Terminal Event Log ── */
+  .terminal-log {
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    height: 180px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 12px;
+    color: #a5d6ff;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .log-line {
+    border-left: 2px solid #58a6ff;
+    padding-left: 8px;
+    line-height: 1.4;
+  }
+
+  .log-line.gift { border-color: var(--gold); color: #ffd766; }
+  .log-line.like { border-color: var(--neon-green); color: #85e89d; }
+  .log-line.battle { border-color: var(--battle-orange); color: #ffab70; }
+  .log-line.register { border-color: var(--neon-blue); color: #79c0ff; }
+  .log-line.system { border-color: #8b949e; color: #8b949e; }
+
+  /* ── Switch CSS ── */
+  .switch-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+  }
+
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .4s;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider {
+    background-color: var(--neon-green);
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(24px);
+  }
+
+  /* ── Battle banner info ── */
+  .battle-display {
+    background: linear-gradient(135deg, rgba(255, 107, 0, 0.15) 0%, rgba(0, 0, 0, 0.4) 100%);
+    border: 1px solid rgba(255, 107, 0, 0.4);
+    border-radius: 12px;
+    padding: 14px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .battle-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--battle-orange);
+  }
+
+  .battle-vs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .battle-side {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 1.5px;
+  }
+
+  /* ── Stats Row ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+  }
+
+  .stat-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  
+  <!-- ── Header ── -->
+  <header>
+    <div class="header-logo">
+      <span>⚔️</span>
+      <h1>COUNTRY WARS CONTROL PANEL</h1>
+    </div>
+    <div class="status-pill" id="conn-status">
+      <div class="status-dot"></div>
+      <span id="conn-text">Connecting...</span>
+    </div>
+  </header>
+
+  <!-- ── Left Column: Real-time Leaderboard & Stats ── -->
+  <div class="panel">
+    <div class="panel-title">🏆 Scoreboard <span style="font-size:12px; color:rgba(255,255,255,0.4)">Live WebSocket</span></div>
+    
+    <div class="mini-leaderboard" id="mini-leaderboard">
+      <div style="text-align:center; padding: 20px; color:rgba(255,255,255,0.4)">No country data. Add a country to start!</div>
+    </div>
+
+    <div class="panel-title">📊 Game Stats</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Countries</div>
+        <div class="stat-value" id="stat-countries">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Viewers</div>
+        <div class="stat-value" id="stat-viewers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Gifts</div>
+        <div class="stat-value" id="stat-gifts">0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Center Column: Manual Event Simulator ── -->
+  <div class="panel" style="gap: 20px;">
+    <div class="panel-title">🚀 Trigger Mock Events</div>
+
+    <!-- 1. Username Field -->
+    <div class="form-group">
+      <label>Viewer Username</label>
+      <div class="input-row">
+        <input type="text" id="viewer-username" value="warrior_ph"/>
+        <button class="btn btn-secondary" onclick="randomizeUser()" style="padding: 10px;">🎲</button>
+      </div>
+    </div>
+
+    <!-- 2. Country Flag Grid Picker -->
+    <div class="form-group">
+      <label>Target Country (Click to Select)</label>
+      <div class="country-picker-grid" id="flag-grid"></div>
+      
+      <!-- Or manual entry -->
+      <div class="input-row" style="margin-top:8px;">
+        <input type="text" id="custom-country" placeholder="Or type any other Country (e.g. Canada)"/>
+        <button class="btn btn-secondary" onclick="registerCustomCountry()" style="font-size:13px; font-weight:600; white-space:nowrap;">Register Country</button>
+      </div>
+    </div>
+
+    <!-- 3. Event Types Selection -->
+    <div class="form-group">
+      <label>Engagement Type</label>
+      <div class="event-btn-grid">
+        <div class="action-btn selected" id="action-like" onclick="selectAction('like')">
+          <span class="icon">👍</span>
+          <span>Like</span>
+        </div>
+        <div class="action-btn" id="action-comment" onclick="selectAction('comment')">
+          <span class="icon">💬</span>
+          <span>Comment</span>
+        </div>
+        <div class="action-btn" id="action-follow" onclick="selectAction('follow')">
+          <span class="icon">➕</span>
+          <span>Follow</span>
+        </div>
+        <div class="action-btn" id="action-share" onclick="selectAction('share')">
+          <span class="icon">↗️</span>
+          <span>Share</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Comment Input (Visible when comment is selected) -->
+    <div class="form-group" id="comment-input-wrap" style="display:none;">
+      <label>Comment Message</label>
+      <input type="text" id="comment-text" placeholder="Type a funny mock comment..." value="Philippines standard country! Let's go! 🇵🇭"/>
+    </div>
+
+    <!-- 4. Gift Selection (Visible only when Gift is selected - or let's place it right here) -->
+    <div class="form-group">
+      <label>Or Send Gift</label>
+      <div class="gift-picker-grid">
+        <div class="gift-card" onclick="selectGift('rose', 1)">
+          <div class="emoji">🌹</div>
+          <div>Rose</div>
+          <div class="points">10 pts</div>
+        </div>
+        <div class="gift-card" onclick="selectGift('ice cream cone', 1)">
+          <div class="emoji">🍦</div>
+          <div>Ice Cream</div>
+          <div class="points">50 pts</div>
+        </div>
+        <div class="gift-card" onclick="selectGift('fireworks', 1)">
+          <div class="emoji">🎆</div>
+          <div>Fireworks</div>
+          <div class="points">100 pts</div>
+        </div>
+        <div class="gift-card" onclick="selectGift('lion', 1)">
+          <div class="emoji">🦁</div>
+          <div>Lion</div>
+          <div class="points">1K pts</div>
+        </div>
+        <div class="gift-card" onclick="selectGift('galaxy', 1)">
+          <div class="emoji">🌌</div>
+          <div>Galaxy</div>
+          <div class="points">5K pts</div>
+        </div>
+        <div class="gift-card" onclick="selectGift('tiktok universe', 1)">
+          <div class="emoji">🪐</div>
+          <div>Universe</div>
+          <div class="points">10K pts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Trigger Button -->
+    <button class="btn btn-primary" onclick="sendEvent()" style="margin-top: 10px; font-size:16px; padding:14px;">
+      🚀 Send Custom Event
+    </button>
+  </div>
+
+  <!-- ── Right Column: Automations, Battle, Activity Log ── -->
+  <div class="panel">
+    
+    <!-- Simulation controls -->
+    <div class="panel-title">🤖 Auto Simulation</div>
+    <div class="form-group" style="gap: 12px;">
+      <div class="switch-container">
+        <label style="font-weight:600; font-size:13px; color:#fff">Run Auto Events in Background</label>
+        <label class="switch">
+          <input type="checkbox" id="auto-demo-checkbox" checked onchange="toggleAutoDemo()"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+      
+      <div class="form-group">
+        <label>Simulation Speed</label>
+        <select id="sim-speed-select" onchange="toggleAutoDemo()">
+          <option value="slow">Slow (every 3 - 6 seconds)</option>
+          <option value="medium" selected>Medium (every 1 - 2.5 seconds)</option>
+          <option value="fast">Fast / Storm (every 0.1 - 0.5 seconds)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Battle system -->
+    <div class="panel-title">⚔️ Battle System</div>
+    
+    <!-- Active Battle Info -->
+    <div class="battle-display" id="battle-display" style="display:none;">
+      <div class="battle-title">BATTLE ACTIVE (1.5x pts)</div>
+      <div class="battle-vs">
+        <span class="battle-side" id="battle-country-a" style="color:var(--neon-blue);">PH</span>
+        <span style="font-size:16px; font-weight:900; color:rgba(255,255,255,0.4)">VS</span>
+        <span class="battle-side" id="battle-country-b" style="color:var(--neon-pink);">JP</span>
+      </div>
+      <button class="btn btn-danger" onclick="endBattle()" style="padding: 6px 12px; font-size:12px;">⚔️ End Battle (Pick Winner)</button>
+    </div>
+
+    <!-- Start Battle Form -->
+    <div class="form-group" id="battle-form">
+      <div class="input-row">
+        <select id="battle-select-a"><option value="">-- Country A --</option></select>
+        <select id="battle-select-b"><option value="">-- Country B --</option></select>
+      </div>
+      <button class="btn btn-battle" onclick="startBattle()">
+        ⚔️ Start Points Battle
+      </button>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="panel-title">📝 Real-Time Activity Log</div>
+    <div class="terminal-log" id="log-box">
+      <div class="log-line system">[SYSTEM] Control Panel launched. Awaiting WebSocket connect...</div>
+    </div>
+
+    <!-- Reset / Danger Zone -->
+    <div class="panel-title" style="color:var(--neon-pink);">⚠️ Danger Zone</div>
+    <div style="background: rgba(255,0,127,0.05); border: 1px solid rgba(255,0,127,0.2); border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+      <div style="font-size:12px; color:rgba(255,255,255,0.6);">Resets all scores, levels, countries and users to start a fresh simulation game.</div>
+      <button class="btn btn-danger" onclick="resetDatabase()">💥 Reset Database & Scores</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Predefined popular countries ──
+  const POPULAR_COUNTRIES = [
+    { name: "Philippines", code: "PH", flag: "🇵🇭" },
+    { name: "Japan", code: "JP", flag: "🇯🇵" },
+    { name: "USA", code: "US", flag: "🇺🇸" },
+    { name: "South Korea", code: "KR", flag: "🇰🇷" },
+    { name: "Indonesia", code: "ID", flag: "🇮🇩" },
+    { name: "Thailand", code: "TH", flag: "🇹🇭" },
+    { name: "Malaysia", code: "MY", flag: "🇲🇾" },
+    { name: "Vietnam", code: "VN", flag: "🇻🇳" },
+    { name: "Brazil", code: "BR", flag: "🇧🇷" },
+    { name: "Canada", code: "CA", flag: "🇨🇦" },
+    { name: "China", code: "CN", flag: "🇨🇳" },
+    { name: "United Kingdom", code: "UK", flag: "🇬🇧" },
+    { name: "Germany", code: "DE", flag: "🇩🇪" },
+    { name: "Australia", code: "AU", flag: "🇦🇺" },
+    { name: "Spain", code: "ES", flag: "🇪🇸" },
+    { name: "Italy", code: "IT", flag: "🇮🇹" },
+  ];
+
+  let selectedCountry = "Philippines";
+  let selectedActionType = "like";
+  let activeBattleData = null;
+
+  // ── Render Flags ──
+  function renderFlagGrid() {
+    const grid = document.getElementById('flag-grid');
+    grid.innerHTML = '';
+    POPULAR_COUNTRIES.forEach(c => {
+      const card = document.createElement('div');
+      card.className = `country-card ${c.name === selectedCountry ? 'selected' : ''}`;
+      card.onclick = () => selectCountry(c.name);
+      card.innerHTML = `
+        <div class="flag">${c.flag}</div>
+        <div class="code">${c.code}</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+  renderFlagGrid();
+
+  function selectCountry(name) {
+    selectedCountry = name;
+    document.getElementById('custom-country').value = '';
+    
+    // Update visual state
+    document.querySelectorAll('.country-card').forEach((el, idx) => {
+      if (POPULAR_COUNTRIES[idx].name === name) el.classList.add('selected');
+      else el.classList.remove('selected');
+    });
+
+    // Update standard username suggestion based on country
+    const short = name.substring(0,3).toLowerCase();
+    document.getElementById('viewer-username').value = `${short}_battler_${Math.floor(Math.random() * 89 + 10)}`;
+  }
+
+  // ── Random User Generator ──
+  const RANDOM_NAMES = ["alex", "sakura", "super_live", "clash_fan", "overlay_pro", "gift_giver", "points_king", "neon_rider", "speedy", "alpha_dog", "glitch", "pixel", "shadow", "vortex"];
+  function randomizeUser() {
+    const rName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+    const num = Math.floor(Math.random() * 899 + 100);
+    document.getElementById('viewer-username').value = `${rName}_${num}`;
+  }
+  randomizeUser();
+
+  // ── Action type picker ──
+  function selectAction(type) {
+    selectedActionType = type;
+    document.querySelectorAll('.action-btn').forEach(el => el.classList.remove('selected'));
+    document.getElementById(`action-${type}`).classList.add('selected');
+    
+    // Toggle comment field visibility
+    const commentWrap = document.getElementById('comment-input-wrap');
+    if (type === 'comment') commentWrap.style.display = 'flex';
+    else commentWrap.style.display = 'none';
+
+    // Deselect gifts
+    document.querySelectorAll('.gift-card').forEach(el => el.classList.remove('selected'));
+  }
+
+  function selectGift(giftName) {
+    selectedActionType = "gift";
+    document.querySelectorAll('.action-btn').forEach(el => el.classList.remove('selected'));
+    document.getElementById('comment-input-wrap').style.display = 'none';
+
+    // Select gift visual card
+    document.querySelectorAll('.gift-card').forEach(el => {
+      if (el.textContent.toLowerCase().includes(giftName)) el.classList.add('selected');
+      else el.classList.remove('selected');
+    });
+
+    // Keep memory of the selected gift
+    window.selectedGiftName = giftName;
+  }
+
+  // ── WebSocket Live Updates ──
+  const WS_URL = `ws://${location.host}/ws`;
+  let ws;
+
+  function connectWS() {
+    ws = new WebSocket(WS_URL);
+    
+    ws.onopen = () => {
+      document.getElementById('conn-status').classList.remove('offline');
+      document.getElementById('conn-text').textContent = 'Online & Connected';
+      logEvent('system', 'Connected to Country Wars live WebSocket.');
+      fetchConfig();
+    };
+
+    ws.onclose = () => {
+      document.getElementById('conn-status').classList.add('offline');
+      document.getElementById('conn-text').textContent = 'Disconnected (Retrying)';
+      setTimeout(connectWS, 2000);
+    };
+
+    ws.onerror = () => ws.close();
+
+    ws.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      handleLiveMessage(data);
+    };
+  }
+
+  connectWS();
+
+  // ── Handle incoming events from Server WebSocket ──
+  function handleLiveMessage(data) {
+    console.log("WebSocket event: ", data);
+
+    switch (data.type) {
+      case 'full_update':
+        renderMiniLeaderboard(data.leaderboard);
+        break;
+
+      case 'points_update':
+        if (data.leaderboard) renderMiniLeaderboard(data.leaderboard);
+        
+        let emoji = '⭐️';
+        if (data.event_type === 'like') emoji = '👍';
+        if (data.event_type === 'comment') emoji = '💬';
+        if (data.event_type === 'follow') emoji = '➕';
+        if (data.event_type === 'share') emoji = '↗️';
+        if (data.event_type === 'gift') {
+          const gemojis = { rose:'🌹', lion:'🦁', galaxy:'🌌', fireworks:'🎆', 'ice cream cone':'🍦', 'drama queen':'👑', concert:'🎵', universe:'🌌' };
+          emoji = gemojis[data.gift_name] || '🎁';
+        }
+
+        const battleInfo = data.multiplier > 1.0 ? `[BATTLE 1.5x]` : '';
+        logEvent(
+          data.event_type, 
+          `${emoji} <strong>${data.user}</strong> scored +${data.points_added} pts for <strong>${data.country}</strong> via ${data.event_type === 'gift' ? data.gift_name : data.event_type} ${battleInfo}`
+        );
+
+        if (data.leveled_up) {
+          logEvent('system', `🎉 LEVEL UP! <strong>${data.country}</strong> reached <strong>${data.level_label}</strong>!`);
+        }
+
+        if (data.battle) {
+          showActiveBattle(data.battle);
+        } else {
+          hideActiveBattle();
+        }
+        break;
+
+      case 'register':
+        logEvent('register', `🌏 <strong>${data.user}</strong> registered country: <strong>${data.country}</strong>`);
+        break;
+
+      case 'battle_start':
+        logEvent('battle', `⚔️ A POINTS BATTLE STARTED: <strong>${data.country_a}</strong> VS <strong>${data.country_b}</strong>!`);
+        showActiveBattle({ country_a: data.country_a, country_b: data.country_b, active: 1 });
+        break;
+
+      case 'battle_end':
+        logEvent('battle', `🏆 BATTLE ENDED! Winner: <strong>${data.winner}</strong>! (+1,000 bonus points awarded)`);
+        hideActiveBattle();
+        break;
+    }
+  }
+
+  // ── Render Leaderboard inside Control Panel ──
+  function renderMiniLeaderboard(leaderboard) {
+    const list = document.getElementById('mini-leaderboard');
+    
+    // Update statistics numbers
+    document.getElementById('stat-countries').textContent = leaderboard.length;
+    
+    // Populate Battle dropdown selectors
+    const selectA = document.getElementById('battle-select-a');
+    const selectB = document.getElementById('battle-select-b');
+    const prevA = selectA.value;
+    const prevB = selectB.value;
+
+    selectA.innerHTML = '<option value="">-- Country A --</option>';
+    selectB.innerHTML = '<option value="">-- Country B --</option>';
+
+    if (leaderboard.length === 0) {
+      list.innerHTML = `<div style="text-align:center; padding: 20px; color:rgba(255,255,255,0.4)">No country data. Add a country to start!</div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    leaderboard.forEach(r => {
+      // Leaderboard rows
+      const row = document.createElement('div');
+      
+      const isBattleCountry = activeBattleData && (r.country === activeBattleData.country_a || r.country === activeBattleData.country_b);
+      row.className = `mini-row rank-${r.rank} ${isBattleCountry ? 'battle' : ''}`;
+      
+      const rankSymbol = r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : `#${r.rank}`;
+      row.innerHTML = `
+        <div class="mini-rank">${rankSymbol}</div>
+        <div class="mini-flag">${r.flag}</div>
+        <div class="mini-name">${r.country} <span style="font-size:10px; color:rgba(255,255,255,0.4)">(${r.level_label})</span></div>
+        <div class="mini-pts">${r.points.toLocaleString()} pts</div>
+      `;
+      list.appendChild(row);
+
+      // Dropdown populate
+      const optA = document.createElement('option');
+      optA.value = r.country;
+      optA.textContent = `${r.flag} ${r.country}`;
+      selectA.appendChild(optA);
+
+      const optB = document.createElement('option');
+      optB.value = r.country;
+      optB.textContent = `${r.flag} ${r.country}`;
+      selectB.appendChild(optB);
+    });
+
+    selectA.value = prevA;
+    selectB.value = prevB;
+
+    // Refresh general stats in background
+    fetch('/stats')
+      .then(res => res.json())
+      .then(stats => {
+        document.getElementById('stat-viewers').textContent = stats.total_viewers;
+        document.getElementById('stat-gifts').textContent = stats.total_gifts;
+      });
+  }
+
+  // ── Show/Hide Battle Panels ──
+  function showActiveBattle(battle) {
+    activeBattleData = battle;
+    document.getElementById('battle-display').style.display = 'flex';
+    document.getElementById('battle-form').style.display = 'none';
+    document.getElementById('battle-country-a').textContent = battle.country_a;
+    document.getElementById('battle-country-b').textContent = battle.country_b;
+  }
+
+  function hideActiveBattle() {
+    activeBattleData = null;
+    document.getElementById('battle-display').style.display = 'none';
+    document.getElementById('battle-form').style.display = 'flex';
+  }
+
+  // ── Log Events to screen logger ──
+  function logEvent(type, message) {
+    const box = document.getElementById('log-box');
+    const time = new Date().toLocaleTimeString();
+    const line = document.createElement('div');
+    line.className = `log-line ${type}`;
+    line.innerHTML = `<span style="color:rgba(255,255,255,0.4)">[${time}]</span> ${message}`;
+    box.appendChild(line);
+    
+    // Auto scroll to bottom
+    box.scrollTop = box.scrollHeight;
+    
+    // Truncate older logs to keep page snappy
+    while (box.children.length > 50) {
+      box.removeChild(box.firstChild);
+    }
+  }
+
+  // ── API Fetch Operations ──
+
+  // Fetch initial config settings
+  function fetchConfig() {
+    fetch('/mock/config')
+      .then(res => res.json())
+      .then(cfg => {
+        document.getElementById('auto-demo-checkbox').checked = cfg.auto_demo;
+        document.getElementById('sim-speed-select').value = cfg.sim_speed;
+        
+        logEvent('system', `Simulation settings synchronized: Auto Demo=${cfg.auto_demo}, Speed=${cfg.sim_speed}`);
+      });
+  }
+
+  // Toggle Background Auto Simulation
+  function toggleAutoDemo() {
+    const auto = document.getElementById('auto-demo-checkbox').checked;
+    const speed = document.getElementById('sim-speed-select').value;
+
+    fetch('/mock/toggle-auto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ auto_demo: auto, sim_speed: speed })
+    })
+    .then(res => res.json())
+    .then(res => {
+      logEvent('system', `SIMULATOR UPDATED: Active=${res.auto_demo}, Speed=${res.sim_speed}`);
+    });
+  }
+
+  // Trigger manual event
+  function sendEvent() {
+    const username = document.getElementById('viewer-username').value.trim();
+    let countryVal = selectedCountry;
+
+    // Check custom country
+    const custom = document.getElementById('custom-country').value.trim();
+    if (custom) countryVal = custom;
+
+    if (!username) {
+      alert("Please enter a username!");
+      return;
+    }
+
+    const payload = {
+      type: selectedActionType,
+      user: username,
+      country: countryVal
+    };
+
+    if (selectedActionType === 'gift') {
+      payload.gift_name = window.selectedGiftName || 'rose';
+      payload.amount = 1;
+    }
+
+    logEvent('system', `Sending custom event: ${selectedActionType} from ${username} for ${countryVal}...`);
+
+    fetch('/mock/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  }
+
+  // Register a new country manually without scoring points immediately
+  function registerCustomCountry() {
+    const countryName = document.getElementById('custom-country').value.trim();
+    const username = document.getElementById('viewer-username').value.trim();
+    if (!countryName) {
+      alert("Please enter a country name!");
+      return;
+    }
+    
+    fetch('/mock/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'register',
+        user: username,
+        country: countryName
+      })
+    })
+    .then(res => res.json())
+    .then(res => {
+      logEvent('register', `Registered new battle country manually: <strong>${res.event.country}</strong>`);
+      document.getElementById('custom-country').value = '';
+    });
+  }
+
+  // Battle commands
+  function startBattle() {
+    const a = document.getElementById('battle-select-a').value;
+    const b = document.getElementById('battle-select-b').value;
+
+    if (!a || !b) {
+      alert("Please select both Country A and Country B to start a battle!");
+      return;
+    }
+    if (a === b) {
+      alert("Countries must be different!");
+      return;
+    }
+
+    fetch('/battle/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ country_a: a, country_b: b })
+    });
+  }
+
+  function endBattle() {
+    fetch('/battle/end', { method: 'POST' });
+  }
+
+  // Reset database scores
+  function resetDatabase() {
+    if (!confirm("⚠️ WARNING: This will permanently delete all viewers, countries, points, and history database logs! Are you sure?")) {
+      return;
+    }
+    
+    logEvent('system', 'Resetting database...');
+    fetch('/mock/reset', { method: 'POST' })
+      .then(res => res.json())
+      .then(res => {
+        logEvent('system', 'Database successfully cleared. Starting clean slate!');
+        document.getElementById('mini-leaderboard').innerHTML = `<div style="text-align:center; padding: 20px; color:rgba(255,255,255,0.4)">No country data. Add a country to start!</div>`;
+        document.getElementById('stat-countries').textContent = '0';
+        document.getElementById('stat-viewers').textContent = '0';
+        document.getElementById('stat-gifts').textContent = '0';
+      });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: countrywars-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && uvicorn app:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MOCK_MODE
+        value: "false"
+      - key: TIKTOK_USERNAME
+        value: "demo_user"
